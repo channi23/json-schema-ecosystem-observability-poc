@@ -1,0 +1,28 @@
+{
+  "name": "json-schema-ecosystem-observability-poc",
+  "version": "1.0.0",
+  "description": "Proof of concept for collecting ecosystem metrics for JSON Schema (GSoC qualification task)",
+  "main": "dist/index.js",
+  "type": "module",
+  "scripts": {
+    "dev": "ts-node src/index.ts",
+    "build": "tsc",
+    "start": "node dist/index.js"
+  },
+  "keywords": [
+    "json-schema",
+    "observability",
+    "ecosystem",
+    "metrics"
+  ],
+  "author": "",
+  "license": "ISC",
+  "dependencies": {
+    "axios": "^1.13.6"
+  },
+  "devDependencies": {
+    "@types/node": "^25.3.3",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3"
+  }
+}
