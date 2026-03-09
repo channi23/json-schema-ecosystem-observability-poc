@@ -11,7 +11,7 @@ export type NpmAjvWeekly={
 
 // need to define a function which fetches the data and return in NpmAjvFormat
 
-async function fetchAjvWeeklyDownloads():Promise<NpmAjvWeekly>{
+export async function fetchAjvWeeklyDownloads():Promise<NpmAjvWeekly>{
     //need to get the url for fetching
     //https://api.npmjs.org/downloads/point/<period>/<package>
     const url = "https://api.npmjs.org/downloads/point/last-week/ajv";
