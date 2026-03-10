@@ -1,0 +1,312 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>JSON Schema Ecosystem Observability</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+      :root {
+        --bg: #f5f7fb;
+        --card: #ffffff;
+        --text: #1f2937;
+        --muted: #6b7280;
+        --navy: #0b1f3a;
+        --blue: #2563eb;
+        --border: #e5e7eb;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: Inter, Arial, sans-serif;
+        background: var(--bg);
+        color: var(--text);
+      }
+
+      .hero {
+        background: var(--navy);
+        color: white;
+        padding: 32px 24px;
+      }
+
+      .hero-inner {
+        max-width: 1200px;
+        margin: 0 auto;
+      }
+
+      .hero h1 {
+        margin: 0 0 8px;
+        font-size: 2rem;
+      }
+
+      .hero p {
+        margin: 0;
+        color: #d1d5db;
+        font-size: 1rem;
+      }
+
+      .container {
+        max-width: 1200px;
+        margin: 24px auto 40px;
+        padding: 0 20px;
+      }
+
+      .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+        gap: 16px;
+        margin-bottom: 24px;
+      }
+
+      .stat-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 20px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      }
+
+      .stat-label {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-bottom: 8px;
+      }
+
+      .stat-value {
+        font-size: 1.8rem;
+        font-weight: 700;
+        color: var(--navy);
+      }
+
+      .section-card {
+        background: var(--card);
+        border: 1px solid var(--border);
+        border-radius: 14px;
+        padding: 22px;
+        margin-bottom: 22px;
+        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
+      }
+
+      .section-card h2 {
+        margin: 0 0 6px;
+        font-size: 1.2rem;
+        color: var(--navy);
+      }
+
+      .section-card p {
+        margin: 0 0 18px;
+        color: var(--muted);
+        font-size: 0.95rem;
+      }
+
+      canvas {
+        width: 100% !important;
+        max-height: 380px;
+      }
+
+      .footer-note {
+        color: var(--muted);
+        font-size: 0.9rem;
+        margin-top: 10px;
+      }
+    </style>
+  </head>
+  <body>
+    <header class="hero">
+      <div class="hero-inner">
+        <h1>JSON Schema Ecosystem Observability</h1>
+        <p>
+          A simple dashboard showing adoption, breadth, quality, and draft evolution over time.
+        </p>
+      </div>
+    </header>
+
+    <main class="container">
+      <section class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Ajv weekly downloads</div>
+          <div class="stat-value" id="stat-ajv">—</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Repos with topic:json-schema</div>
+          <div class="stat-value" id="stat-topic">—</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Bowtie compliance</div>
+          <div class="stat-value" id="stat-bowtie">—</div>
+        </div>
+
+        <div class="stat-card">
+          <div class="stat-label">Leading draft</div>
+          <div class="stat-value" id="stat-draft">—</div>
+        </div>
+      </section>
+
+      <section class="section-card">
+        <h2>Adoption</h2>
+        <p>Weekly npm downloads of Ajv as a proxy for JSON Schema adoption in the JavaScript ecosystem.</p>
+        <canvas id="ajvChart"></canvas>
+      </section>
+
+      <section class="section-card">
+        <h2>Breadth</h2>
+        <p>Repositories on GitHub that identify with the <code>json-schema</code> topic.</p>
+        <canvas id="topicChart"></canvas>
+      </section>
+
+      <section class="section-card">
+        <h2>Quality</h2>
+        <p>Bowtie compliance score showing implementation correctness against JSON Schema tests.</p>
+        <canvas id="bowtieChart"></canvas>
+      </section>
+
+      <section class="section-card">
+        <h2>Draft Adoption</h2>
+        <p>How usage of JSON Schema drafts changes over time across tracked snapshots.</p>
+        <canvas id="draftChart"></canvas>
+        <div class="footer-note">Counts represent matching schema files, not deduplicated repositories.</div>
+      </section>
+    </main>
+
+    <script>
+      async function loadHistory() {
+        const response = await fetch("../data/history.json");
+        if (!response.ok) {
+          throw new Error("Could not load ../data/history.json");
+        }
+        return await response.json();
+      }
+
+      function formatNumber(value) {
+        return new Intl.NumberFormat("en-US").format(value);
+      }
+
+      function createLineChart(canvasId, labels, datasets) {
+        const ctx = document.getElementById(canvasId).getContext("2d");
+
+        new Chart(ctx, {
+          type: "line",
+          data: {
+            labels,
+            datasets
+          },
+          options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            interaction: {
+              mode: "index",
+              intersect: false
+            },
+            plugins: {
+              legend: {
+                display: true
+              }
+            },
+            scales: {
+              y: {
+                beginAtZero: false
+              }
+            }
+          }
+        });
+      }
+
+      function getLeadingDraft(draftAdoption) {
+        const entries = Object.entries(draftAdoption);
+        entries.sort((a, b) => b[1] - a[1]);
+        return entries[0]?.[0] ?? "—";
+      }
+
+      async function main() {
+        const history = await loadHistory();
+        const labels = history.map(item => item.timestamp);
+        const latest = history[history.length - 1];
+
+        document.getElementById("stat-ajv").textContent =
+          formatNumber(latest.metrics.ajv_weekly_downloads);
+
+        document.getElementById("stat-topic").textContent =
+          formatNumber(latest.metrics.json_schema_topic_repos);
+
+        document.getElementById("stat-bowtie").textContent =
+          `${latest.metrics.bowtie_draft2020_12_compliance_percent}%`;
+
+        document.getElementById("stat-draft").textContent =
+          getLeadingDraft(latest.metrics.draft_adoption);
+
+        createLineChart("ajvChart", labels, [
+          {
+            label: "Ajv weekly downloads",
+            data: history.map(item => item.metrics.ajv_weekly_downloads),
+            borderColor: "#2563eb",
+            backgroundColor: "rgba(37, 99, 235, 0.15)",
+            tension: 0.25
+          }
+        ]);
+
+        createLineChart("topicChart", labels, [
+          {
+            label: "Repos with topic:json-schema",
+            data: history.map(item => item.metrics.json_schema_topic_repos),
+            borderColor: "#0f766e",
+            backgroundColor: "rgba(15, 118, 110, 0.15)",
+            tension: 0.25
+          }
+        ]);
+
+        createLineChart("bowtieChart", labels, [
+          {
+            label: "Bowtie compliance %",
+            data: history.map(item => item.metrics.bowtie_draft2020_12_compliance_percent),
+            borderColor: "#7c3aed",
+            backgroundColor: "rgba(124, 58, 237, 0.15)",
+            tension: 0.25
+          }
+        ]);
+
+        createLineChart("draftChart", labels, [
+          {
+            label: "draft-04",
+            data: history.map(item => item.metrics.draft_adoption.draft_04),
+            borderColor: "#ef4444",
+            tension: 0.25
+          },
+          {
+            label: "draft-06",
+            data: history.map(item => item.metrics.draft_adoption.draft_06),
+            borderColor: "#f59e0b",
+            tension: 0.25
+          },
+          {
+            label: "draft-07",
+            data: history.map(item => item.metrics.draft_adoption.draft_07),
+            borderColor: "#10b981",
+            tension: 0.25
+          },
+          {
+            label: "draft-2019-09",
+            data: history.map(item => item.metrics.draft_adoption.draft_2019_09),
+            borderColor: "#06b6d4",
+            tension: 0.25
+          },
+          {
+            label: "draft-2020-12",
+            data: history.map(item => item.metrics.draft_adoption.draft_2020_12),
+            borderColor: "#2563eb",
+            tension: 0.25
+          }
+        ]);
+      }
+
+      main().catch(err => {
+        document.body.innerHTML = `<pre style="padding:24px;">${err.message}</pre>`;
+      });
+    </script>
+  </body>
+</html>

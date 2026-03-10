@@ -1,0 +1,17 @@
+[
+  {
+    "timestamp": "2026-03-10",
+    "metrics": {
+      "ajv_weekly_dowloads": 259851034,
+      "json_schema_topic_repos": 2400,
+      "bowtie_draft2020_12_compliance_count": 97.97131949882537,
+      "draft_adoption": {
+        "draft_04": 32480,
+        "draft_06": 3552,
+        "draft_07": 17368,
+        "draft_2019_09": 1444,
+        "draft_2020_12": 7648
+      }
+    }
+  }
+]

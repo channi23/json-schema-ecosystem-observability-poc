@@ -1,12 +1,5 @@
-import {execFile} from "child_process";
-import {promisify} from "util"
-//we are using bowtie cli
-//the child process module allows the node to spawn a new process and run the commands
-
 import { spawn } from "child_process";
 //using spawn as execFile did not consider input , so now i am gonna use pipes
-
-const execFileAsync = promisify(execFile); //creates a promise verison of execFile
 
 type BowtieStatistics = any;
 
@@ -37,16 +30,18 @@ async function runBowtie(args:string[],input?:string):Promise<string>{
 
 function findPercent(obj:any):number|null{
     const candidates:any[]=[
+        obj?.mean,
         obj?.overall?.compliance_percent,
-        obj?.overall?.compliacePercent,
+        obj?.compliacePercent,
         obj?.compliance_percent,
         obj?.compliacePercent,
         obj?.summary?.compliance_percent,
         obj?.summary?.compliacePercent,
     ];
     for(const c of candidates){
-        if(typeof c === "number" && c>=0 && c<=100){
-            return c;
+        if(typeof c === "number"){
+            if(c >= 0 && c <= 1) return c * 100;
+            if(c > 1 && c <= 100) return c;
         }
     }
     //if we could not find that expected in the above paths, then we need to scan the entire object
@@ -57,9 +52,12 @@ function findPercent(obj:any):number|null{
         const curr = stack.pop();
         if(!curr||typeof curr !=="object") continue;
         for(const[k,v] of Object.entries(curr)){
-            if(typeof v ==="number" && v>=0 && v<=100){
+            if(typeof v ==="number"){
                 const key = k.toLowerCase();
-                if(key.includes("compliance")) return v;
+                if(key.includes("compliance") || key === "mean" || key === "median"){
+                    if(v >= 0 && v <= 1) return v * 100;
+                    if(v > 1 && v <= 100) return v;
+                }
             }
             else if(v && typeof v ==="object"){
                 stack.push(v);
@@ -89,7 +87,7 @@ export async function fetchBowtieCompliance():Promise<{
     }
     const compliance = findPercent(statsJson);
     if(compliance==null){
-        throw new Error("Could not find a compliance percent in Bowtie statistics JSON. Print the JSON and adjust extractor paths.");
+        throw new Error("Could not find a compliance percent in Bowtie statistics JSON. Inspect the printed Bowtie JSON above and adjust extractor paths.");
 
     }
     return {dialect:"draft2020-12",compliancePercent:compliance};
