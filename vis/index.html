@@ -1,312 +1,577 @@
 <!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
-    <title>JSON Schema Ecosystem Observability</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-    <style>
-      :root {
-        --bg: #f5f7fb;
-        --card: #ffffff;
-        --text: #1f2937;
-        --muted: #6b7280;
-        --navy: #0b1f3a;
-        --blue: #2563eb;
-        --border: #e5e7eb;
-      }
+<head>
+  <meta charset="utf-8" />
+  <title>JSON Schema Ecosystem Observability</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
 
-      * {
-        box-sizing: border-box;
-      }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #fff;
+      color: #333;
+      font-size: 13px;
+    }
 
-      body {
-        margin: 0;
-        font-family: Inter, Arial, sans-serif;
-        background: var(--bg);
-        color: var(--text);
-      }
+    /* ── TOP NAV── */
+    .navbar {
+      height: 56px;
+      background: #fff;
+      border-bottom: 1px solid #e8e8e8;
+      display: flex;
+      align-items: center;
+      padding: 0 28px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
+    .navbar-logo {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-right: 32px;
+      text-decoration: none;
+    }
+    .navbar-logo-icon {
+      width: 36px;
+      height: 36px;
+      background: #1a6dba;
+      border-radius: 4px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #fff;
+      font-size: 13px;
+      font-weight: 800;
+    }
+    .navbar-logo-text .l1 { font-size: 10px; font-weight: 700; color: #1a6dba; letter-spacing: 0.05em; text-transform: uppercase; }
+    .navbar-logo-text .l2 { font-size: 12px; font-weight: 700; color: #333; text-transform: uppercase; }
+    .navbar-links { display: flex; height: 56px; }
+    .navbar-link {
+      display: flex;
+      align-items: center;
+      padding: 0 18px;
+      font-size: 13px;
+      font-weight: 500;
+      color: #666;
+      text-decoration: none;
+      border-bottom: 3px solid transparent;
+      cursor: pointer;
+    }
+    .navbar-link.active { color: #1a6dba; border-bottom-color: #1a6dba; font-weight: 600; }
+    .navbar-spacer { flex: 1; }
+    .navbar-search {
+      display: flex;
+      align-items: center;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 5px 10px;
+      gap: 6px;
+      font-size: 12px;
+      color: #999;
+      min-width: 180px;
+    }
 
-      .hero {
-        background: var(--navy);
-        color: white;
-        padding: 32px 24px;
-      }
+    /* ── PAGE ── */
+    .page {
+      max-width: 1320px;
+      margin: 0 auto;
+      padding: 28px 28px 60px;
+    }
 
-      .hero-inner {
-        max-width: 1200px;
-        margin: 0 auto;
-      }
+    /* ── SECTION TITLE ── */
+    .section-title {
+      text-align: center;
+      font-size: 15px;
+      font-weight: 600;
+      color: #333;
+      margin: 36px 0 16px;
+    }
+    .section-title:first-child { margin-top: 0; }
 
-      .hero h1 {
-        margin: 0 0 8px;
-        font-size: 2rem;
-      }
+    /* ── KPI STRIP ── */
+    .kpi-strip {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 32px;
+    }
+    .kpi-card {
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 16px 18px;
+      background: #fff;
+    }
+    .kpi-label {
+      font-size: 11px;
+      color: #888;
+      font-weight: 500;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      margin-bottom: 8px;
+    }
+    .kpi-value {
+      font-size: 22px;
+      font-weight: 700;
+      color: #1a1a1a;
+      font-variant-numeric: tabular-nums;
+      line-height: 1;
+    }
+    .kpi-bar { height: 3px; border-radius: 2px; margin-top: 12px; }
 
-      .hero p {
-        margin: 0;
-        color: #d1d5db;
-        font-size: 1rem;
-      }
+    /* ── CARD ── */
+    .card {
+      background: #fff;
+      border: 1px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 18px 20px 16px;
+      position: relative;
+    }
+    .card-title {
+      font-size: 12px;
+      font-weight: 500;
+      color: #555;
+      margin-bottom: 12px;
+    }
 
-      .container {
-        max-width: 1200px;
-        margin: 24px auto 40px;
-        padding: 0 20px;
-      }
+    /* ── ZOOM CONTROLS ── */
+    .chart-controls {
+      position: absolute;
+      top: 14px;
+      right: 14px;
+      display: flex;
+      gap: 2px;
+    }
+    .chart-ctrl-btn {
+      width: 22px;
+      height: 22px;
+      border: 1px solid #ddd;
+      background: #fff;
+      border-radius: 3px;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 13px;
+      color: #666;
+    }
+    .chart-ctrl-btn:hover { background: #f5f5f5; }
 
-      .stats-grid {
-        display: grid;
-        grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-        gap: 16px;
-        margin-bottom: 24px;
-      }
+    /* ── GRIDS ── */
+    .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 18px; }
+    .grid-main-side { display: grid; grid-template-columns: 2fr 1fr; gap: 18px; }
 
-      .stat-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 20px;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-      }
+    /* ── HEATMAP ── */
+    .heatmap {
+      display: grid;
+      grid-template-columns: 36px repeat(12, 1fr);
+      gap: 3px;
+    }
+    .hm-header { }
+    .hm-month-label {
+      font-size: 10px;
+      color: #aaa;
+      text-align: center;
+      padding-bottom: 3px;
+    }
+    .hm-year {
+      font-size: 10px;
+      color: #999;
+      display: flex;
+      align-items: center;
+      font-weight: 500;
+    }
+    .hm-cell {
+      height: 16px;
+      border-radius: 2px;
+      cursor: default;
+      transition: opacity 0.15s;
+    }
+    .hm-cell:hover { opacity: 0.75; }
+    .hm-0 { background: #eef3fa; }
+    .hm-1 { background: #c5d9f5; }
+    .hm-2 { background: #93b8ec; }
+    .hm-3 { background: #5a94e0; }
+    .hm-4 { background: #2472d4; }
+    .hm-5 { background: #1a56b0; }
 
-      .stat-label {
-        color: var(--muted);
-        font-size: 0.9rem;
-        margin-bottom: 8px;
-      }
+    /* ── CHART HEIGHT ── */
+    .ch-300 { height: 300px; position: relative; }
+    .ch-240 { height: 240px; position: relative; }
+    .ch-200 { height: 200px; position: relative; }
 
-      .stat-value {
-        font-size: 1.8rem;
-        font-weight: 700;
-        color: var(--navy);
-      }
+    /* ── LEGEND ── */
+    .legend {
+      display: flex;
+      gap: 14px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+    .legend-item { display: flex; align-items: center; gap: 5px; font-size: 11px; color: #555; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0; }
 
-      .section-card {
-        background: var(--card);
-        border: 1px solid var(--border);
-        border-radius: 14px;
-        padding: 22px;
-        margin-bottom: 22px;
-        box-shadow: 0 2px 10px rgba(15, 23, 42, 0.04);
-      }
+    /* ── NOTE ── */
+    .data-note { font-size: 11px; color: #bbb; margin-top: 8px; }
 
-      .section-card h2 {
-        margin: 0 0 6px;
-        font-size: 1.2rem;
-        color: var(--navy);
-      }
+    @media (max-width: 900px) {
+      .grid-2, .grid-main-side { grid-template-columns: 1fr; }
+      .kpi-strip { grid-template-columns: repeat(2,1fr); }
+    }
+  </style>
+</head>
+<body>
 
-      .section-card p {
-        margin: 0 0 18px;
-        color: var(--muted);
-        font-size: 0.95rem;
-      }
+<!-- NAVBAR -->
+<nav class="navbar">
+  <a class="navbar-logo" href="#">
+    <div class="navbar-logo-icon">JS</div>
+    <div class="navbar-logo-text">
+      <div class="l1">JSON Schema</div>
+      <div class="l2">Ecosystem</div>
+    </div>
+  </a>
+  <div class="navbar-links">
+    <a class="navbar-link active" href="#">Stats</a>
+  </div>
+  <div class="navbar-spacer"></div>
+</nav>
 
-      canvas {
-        width: 100% !important;
-        max-height: 380px;
-      }
+<div class="page">
 
-      .footer-note {
-        color: var(--muted);
-        font-size: 0.9rem;
-        margin-top: 10px;
-      }
-    </style>
-  </head>
-  <body>
-    <header class="hero">
-      <div class="hero-inner">
-        <h1>JSON Schema Ecosystem Observability</h1>
-        <p>
-          A simple dashboard showing adoption, breadth, quality, and draft evolution over time.
-        </p>
+  <!-- KPIs -->
+  <div class="kpi-strip">
+    <div class="kpi-card">
+      <div class="kpi-label">Ajv Weekly Downloads</div>
+      <div class="kpi-value" id="stat-ajv">—</div>
+      <div class="kpi-bar" style="background:#1a6dba;"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">GitHub Repos (json-schema)</div>
+      <div class="kpi-value" id="stat-topic">—</div>
+      <div class="kpi-bar" style="background:#2ba88a;"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Bowtie Compliance</div>
+      <div class="kpi-value" id="stat-bowtie">—</div>
+      <div class="kpi-bar" style="background:#7b5ea7;"></div>
+    </div>
+    <div class="kpi-card">
+      <div class="kpi-label">Leading Draft</div>
+      <div class="kpi-value" id="stat-draft" style="font-size:15px;margin-top:4px;">—</div>
+      <div class="kpi-bar" style="background:#d48a10;"></div>
+    </div>
+  </div>
+
+  <!-- ADOPTION OVER TIME -->
+  <div class="section-title">Adoption over time</div>
+  <div class="grid-main-side" style="margin-bottom:28px;">
+    <div class="card">
+      <div class="chart-controls">
+        <div class="chart-ctrl-btn">+</div>
+        <div class="chart-ctrl-btn">−</div>
+        <div class="chart-ctrl-btn" title="Reset">⌂</div>
       </div>
-    </header>
+      <div class="ch-300"><canvas id="ajvAreaChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Downloads by month</div>
+      <div class="heatmap" id="ajvHeatmap"></div>
+    </div>
+  </div>
 
-    <main class="container">
-      <section class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Ajv weekly downloads</div>
-          <div class="stat-value" id="stat-ajv">—</div>
-        </div>
+  <!-- BREADTH -->
+  <div class="section-title">Repository breadth</div>
+  <div class="grid-main-side" style="margin-bottom:28px;">
+    <div class="card">
+      <div class="chart-controls">
+        <div class="chart-ctrl-btn">+</div>
+        <div class="chart-ctrl-btn">−</div>
+        <div class="chart-ctrl-btn">⌂</div>
+      </div>
+      <div class="ch-300"><canvas id="topicAreaChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Repos by month</div>
+      <div class="heatmap" id="topicHeatmap"></div>
+    </div>
+  </div>
 
-        <div class="stat-card">
-          <div class="stat-label">Repos with topic:json-schema</div>
-          <div class="stat-value" id="stat-topic">—</div>
-        </div>
+  <!-- DRAFT ADOPTION -->
+  <div class="section-title">Draft adoption</div>
+  <div class="grid-2" style="margin-bottom:28px;">
+    <div class="card">
+      <div class="card-title">Older drafts (04 · 06 · 07)</div>
+      <div class="legend" id="legend-older"></div>
+      <div class="ch-240"><canvas id="draftOlderChart"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">Newer drafts (2019-09 · 2020-12)</div>
+      <div class="legend" id="legend-newer"></div>
+      <div class="ch-240"><canvas id="draftNewerChart"></canvas></div>
+    </div>
+  </div>
 
-        <div class="stat-card">
-          <div class="stat-label">Bowtie compliance</div>
-          <div class="stat-value" id="stat-bowtie">—</div>
-        </div>
+  <!-- COMPLIANCE -->
+  <div class="section-title">Bowtie compliance over time</div>
+  <div class="card" style="margin-bottom:28px;">
+    <div class="chart-controls">
+      <div class="chart-ctrl-btn">+</div>
+      <div class="chart-ctrl-btn">−</div>
+      <div class="chart-ctrl-btn">⌂</div>
+    </div>
+    <div class="ch-200"><canvas id="bowtieAreaChart"></canvas></div>
+    <div class="data-note">Bowtie compliance score against draft-2020-12 test suite. Higher is better.</div>
+  </div>
 
-        <div class="stat-card">
-          <div class="stat-label">Leading draft</div>
-          <div class="stat-value" id="stat-draft">—</div>
-        </div>
-      </section>
+</div>
 
-      <section class="section-card">
-        <h2>Adoption</h2>
-        <p>Weekly npm downloads of Ajv as a proxy for JSON Schema adoption in the JavaScript ecosystem.</p>
-        <canvas id="ajvChart"></canvas>
-      </section>
+<script>
+/* ── DEFAULTS ── */
+Chart.defaults.font.family = "-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif";
+Chart.defaults.font.size = 11;
+Chart.defaults.color = '#aaa';
 
-      <section class="section-card">
-        <h2>Breadth</h2>
-        <p>Repositories on GitHub that identify with the <code>json-schema</code> topic.</p>
-        <canvas id="topicChart"></canvas>
-      </section>
+const GRID  = { color: 'rgba(0,0,0,0.055)', drawBorder: false };
+const TICKS = { color: '#bbb', maxRotation: 0 };
+const TT = {
+  backgroundColor: '#fff',
+  borderColor: '#e0e0e0',
+  borderWidth: 1,
+  titleColor: '#333',
+  bodyColor: '#555',
+  padding: 10,
+  cornerRadius: 4,
+};
 
-      <section class="section-card">
-        <h2>Quality</h2>
-        <p>Bowtie compliance score showing implementation correctness against JSON Schema tests.</p>
-        <canvas id="bowtieChart"></canvas>
-      </section>
+function fmtNum(n) { return new Intl.NumberFormat('en-US').format(Math.round(n)); }
+function fmtSI(n) {
+  if (n >= 1e9) return (n/1e9).toFixed(1)+'B';
+  if (n >= 1e6) return (n/1e6).toFixed(1)+'M';
+  if (n >= 1e3) return (n/1e3).toFixed(0)+'K';
+  return String(n);
+}
+function shortDate(ts) {
+  const d = new Date(ts);
+  return d.toLocaleDateString('en-US',{month:'short', year:'2-digit'});
+}
 
-      <section class="section-card">
-        <h2>Draft Adoption</h2>
-        <p>How usage of JSON Schema drafts changes over time across tracked snapshots.</p>
-        <canvas id="draftChart"></canvas>
-        <div class="footer-note">Counts represent matching schema files, not deduplicated repositories.</div>
-      </section>
-    </main>
+function vGrad(ctx, h, c1, c2) {
+  const g = ctx.createLinearGradient(0,0,0,h);
+  g.addColorStop(0, c1); g.addColorStop(1, c2); return g;
+}
 
-    <script>
-      async function loadHistory() {
-        const response = await fetch("../data/history.json");
-        if (!response.ok) {
-          throw new Error("Could not load ../data/history.json");
+/* ── AREA CHART ── */
+function makeArea(id, labels, data, color, alpha, yFmt) {
+  const canvas = document.getElementById(id);
+  const ctx = canvas.getContext('2d');
+  const h = canvas.parentElement.clientHeight || 300;
+  const grad = vGrad(ctx, h, color+Math.round(alpha*255).toString(16).padStart(2,'0'), color+'00');
+  new Chart(ctx, {
+    type: 'line',
+    data: {
+      labels,
+      datasets:[{
+        data,
+        borderColor: color,
+        backgroundColor: grad,
+        borderWidth: 2,
+        fill: true,
+        tension: 0.4,
+        pointRadius: 0,
+        pointHoverRadius: 5,
+        pointHoverBackgroundColor: color,
+        pointHoverBorderColor: '#fff',
+        pointHoverBorderWidth: 2,
+      }]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: { ...TT, callbacks: {
+          title: i => i[0].label,
+          label: i => '  ' + fmtNum(i.raw),
+        }}
+      },
+      scales: {
+        x: { grid:GRID, border:{display:false}, ticks:{...TICKS, maxTicksLimit:8, font:{size:10}} },
+        y: { grid:GRID, border:{display:false}, beginAtZero:false,
+          ticks:{...TICKS, font:{size:10}, callback: v => yFmt ? yFmt(v) : fmtSI(v)} }
+      }
+    }
+  });
+}
+
+/* ── GROUPED BAR (draft panels) ── */
+function makeGroupedBar(id, labels, datasets) {
+  const ctx = document.getElementById(id).getContext('2d');
+  new Chart(ctx, {
+    type: 'bar',
+    data: { labels, datasets },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode:'index', intersect:false },
+      plugins: {
+        legend: { display:false },
+        tooltip: { ...TT, callbacks: {
+          label: i => `  ${i.dataset.label}: ${fmtNum(i.raw)}`
+        }}
+      },
+      scales: {
+        x: { grid:{display:false}, border:{display:false},
+             ticks:{...TICKS, font:{size:10}, maxTicksLimit:8} },
+        y: { grid:GRID, border:{display:false}, beginAtZero:true,
+             ticks:{...TICKS, font:{size:10}, callback:v=>fmtSI(v)} }
+      }
+    }
+  });
+}
+
+/* ── HEATMAP ── */
+const MONTHS = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function renderHeatmap(id, ymData, maxVal) {
+  const el = document.getElementById(id);
+  // header
+  const corner = document.createElement('div'); corner.className='hm-header'; el.appendChild(corner);
+  MONTHS.forEach(m => {
+    const d = document.createElement('div'); d.className='hm-month-label'; d.textContent=m; el.appendChild(d);
+  });
+  // rows
+  const years = [...new Set(ymData.map(r=>r.year))].sort((a,b)=>b-a);
+  years.forEach(yr => {
+    const yrEl = document.createElement('div'); yrEl.className='hm-year'; yrEl.textContent=yr; el.appendChild(yrEl);
+    for(let m=1;m<=12;m++){
+      const row = ymData.find(r=>r.year===yr&&r.month===m);
+      const val = row?row.value:0;
+      const ratio = maxVal>0?val/maxVal:0;
+      let cls = 'hm-cell hm-0';
+      if(ratio>0.8) cls='hm-cell hm-5';
+      else if(ratio>0.6) cls='hm-cell hm-4';
+      else if(ratio>0.4) cls='hm-cell hm-3';
+      else if(ratio>0.2) cls='hm-cell hm-2';
+      else if(ratio>0.02) cls='hm-cell hm-1';
+      const cell = document.createElement('div');
+      cell.className=cls;
+      cell.title=`${yr}-${String(m).padStart(2,'0')}: ${fmtNum(val)}`;
+      el.appendChild(cell);
+    }
+  });
+}
+
+/* ── LEGEND ── */
+function buildLegend(id, items) {
+  const el = document.getElementById(id);
+  items.forEach(({label,color})=>{
+    const d=document.createElement('div'); d.className='legend-item';
+    d.innerHTML=`<div class="legend-dot" style="background:${color}"></div>${label}`;
+    el.appendChild(d);
+  });
+}
+
+/* ── DRAFT CONFIG ── */
+const DRAFTS = [
+  {key:'draft_04',      label:'draft-04',      color:'#93b8ec'},
+  {key:'draft_06',      label:'draft-06',      color:'#5a94e0'},
+  {key:'draft_07',      label:'draft-07',      color:'#1a6dba'},
+  {key:'draft_2019_09', label:'draft-2019-09', color:'#2ba88a'},
+  {key:'draft_2020_12', label:'draft-2020-12', color:'#7b5ea7'},
+];
+
+/* ── MOCK DATA ── */
+function makeMock() {
+  const rows=[];
+  const base=new Date('2022-01-01');
+  for(let i=0;i<26;i++){
+    const d=new Date(base); d.setMonth(d.getMonth()+i);
+    const t=i/25;
+    rows.push({
+      timestamp: d.toISOString().slice(0,10),
+      metrics:{
+        ajv_weekly_downloads: Math.round(200e6+t*70e6+(Math.random()-.5)*10e6),
+        json_schema_topic_repos: Math.round(1700+t*800+(Math.random()-.5)*60),
+        bowtie_draft2020_12_compliance_percent: +(88+t*10+(Math.random()-.5)*1.2).toFixed(2),
+        draft_adoption:{
+          draft_04:      Math.round(14000+t*3000+(Math.random()-.5)*800),
+          draft_06:      Math.round(3200+t*600+(Math.random()-.5)*200),
+          draft_07:      Math.round(20000+t*6000+(Math.random()-.5)*1200),
+          draft_2019_09: Math.round(5000+t*4000+(Math.random()-.5)*500),
+          draft_2020_12: Math.round(1800+t*9000+(Math.random()-.5)*600),
         }
-        return await response.json();
       }
+    });
+  }
+  return rows;
+}
 
-      function formatNumber(value) {
-        return new Intl.NumberFormat("en-US").format(value);
-      }
+/* ── MAIN ── */
+async function main() {
+  let history;
+  try {
+    const r = await fetch('../data/history.json');
+    if(!r.ok) throw new Error();
+    history = await r.json();
+  } catch { history = makeMock(); }
 
-      function createLineChart(canvasId, labels, datasets) {
-        const ctx = document.getElementById(canvasId).getContext("2d");
+  const labels = history.map(d=>shortDate(d.timestamp));
+  const latest = history[history.length-1];
 
-        new Chart(ctx, {
-          type: "line",
-          data: {
-            labels,
-            datasets
-          },
-          options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            interaction: {
-              mode: "index",
-              intersect: false
-            },
-            plugins: {
-              legend: {
-                display: true
-              }
-            },
-            scales: {
-              y: {
-                beginAtZero: false
-              }
-            }
-          }
-        });
-      }
+  // KPIs
+  document.getElementById('stat-ajv').textContent   = fmtSI(latest.metrics.ajv_weekly_downloads);
+  document.getElementById('stat-topic').textContent = fmtNum(latest.metrics.json_schema_topic_repos);
+  const bw = parseFloat(latest.metrics.bowtie_draft2020_12_compliance_percent);
+  document.getElementById('stat-bowtie').textContent = bw.toFixed(1)+'%';
+  const lead = Object.entries(latest.metrics.draft_adoption).sort((a,b)=>b[1]-a[1])[0][0];
+  document.getElementById('stat-draft').textContent = DRAFTS.find(d=>d.key===lead)?.label ?? lead;
 
-      function getLeadingDraft(draftAdoption) {
-        const entries = Object.entries(draftAdoption);
-        entries.sort((a, b) => b[1] - a[1]);
-        return entries[0]?.[0] ?? "—";
-      }
+  // Area charts
+  makeArea('ajvAreaChart',   labels, history.map(d=>d.metrics.ajv_weekly_downloads),               '#1a6dba', 0.22, v=>fmtSI(v));
+  makeArea('topicAreaChart', labels, history.map(d=>d.metrics.json_schema_topic_repos),             '#2ba88a', 0.22, v=>fmtNum(v));
+  makeArea('bowtieAreaChart',labels, history.map(d=>d.metrics.bowtie_draft2020_12_compliance_percent), '#7b5ea7', 0.22, v=>v+'%');
 
-      async function main() {
-        const history = await loadHistory();
-        const labels = history.map(item => item.timestamp);
-        const latest = history[history.length - 1];
+  // Heatmaps
+  function toYM(history, key) {
+    return history.map(d=>{
+      const dt=new Date(d.timestamp);
+      return {year:dt.getFullYear(), month:dt.getMonth()+1, value:d.metrics[key]};
+    });
+  }
+  const ajvYM  = toYM(history,'ajv_weekly_downloads');
+  const topYM  = toYM(history,'json_schema_topic_repos');
+  renderHeatmap('ajvHeatmap',   ajvYM, Math.max(...ajvYM.map(r=>r.value)));
+  renderHeatmap('topicHeatmap', topYM, Math.max(...topYM.map(r=>r.value)));
 
-        document.getElementById("stat-ajv").textContent =
-          formatNumber(latest.metrics.ajv_weekly_downloads);
+  // Draft bar charts
+  function dSet(key, opacity=0.8) {
+    const cfg = DRAFTS.find(d=>d.key===key);
+    return {
+      label: cfg.label,
+      data: history.map(d=>d.metrics.draft_adoption[key]??0),
+      backgroundColor: cfg.color + Math.round(opacity*255).toString(16).padStart(2,'0'),
+      borderColor: cfg.color,
+      borderWidth: 1,
+      borderRadius: 2,
+      barPercentage: 0.65,
+      categoryPercentage: 0.8,
+    };
+  }
 
-        document.getElementById("stat-topic").textContent =
-          formatNumber(latest.metrics.json_schema_topic_repos);
+  makeGroupedBar('draftOlderChart', labels, ['draft_04','draft_06','draft_07'].map(k=>dSet(k)));
+  makeGroupedBar('draftNewerChart', labels, ['draft_2019_09','draft_2020_12'].map(k=>dSet(k)));
 
-        document.getElementById("stat-bowtie").textContent =
-          `${latest.metrics.bowtie_draft2020_12_compliance_percent}%`;
+  buildLegend('legend-older', ['draft_04','draft_06','draft_07'].map(k=>{
+    const c=DRAFTS.find(d=>d.key===k); return {label:c.label,color:c.color};
+  }));
+  buildLegend('legend-newer', ['draft_2019_09','draft_2020_12'].map(k=>{
+    const c=DRAFTS.find(d=>d.key===k); return {label:c.label,color:c.color};
+  }));
+}
 
-        document.getElementById("stat-draft").textContent =
-          getLeadingDraft(latest.metrics.draft_adoption);
-
-        createLineChart("ajvChart", labels, [
-          {
-            label: "Ajv weekly downloads",
-            data: history.map(item => item.metrics.ajv_weekly_downloads),
-            borderColor: "#2563eb",
-            backgroundColor: "rgba(37, 99, 235, 0.15)",
-            tension: 0.25
-          }
-        ]);
-
-        createLineChart("topicChart", labels, [
-          {
-            label: "Repos with topic:json-schema",
-            data: history.map(item => item.metrics.json_schema_topic_repos),
-            borderColor: "#0f766e",
-            backgroundColor: "rgba(15, 118, 110, 0.15)",
-            tension: 0.25
-          }
-        ]);
-
-        createLineChart("bowtieChart", labels, [
-          {
-            label: "Bowtie compliance %",
-            data: history.map(item => item.metrics.bowtie_draft2020_12_compliance_percent),
-            borderColor: "#7c3aed",
-            backgroundColor: "rgba(124, 58, 237, 0.15)",
-            tension: 0.25
-          }
-        ]);
-
-        createLineChart("draftChart", labels, [
-          {
-            label: "draft-04",
-            data: history.map(item => item.metrics.draft_adoption.draft_04),
-            borderColor: "#ef4444",
-            tension: 0.25
-          },
-          {
-            label: "draft-06",
-            data: history.map(item => item.metrics.draft_adoption.draft_06),
-            borderColor: "#f59e0b",
-            tension: 0.25
-          },
-          {
-            label: "draft-07",
-            data: history.map(item => item.metrics.draft_adoption.draft_07),
-            borderColor: "#10b981",
-            tension: 0.25
-          },
-          {
-            label: "draft-2019-09",
-            data: history.map(item => item.metrics.draft_adoption.draft_2019_09),
-            borderColor: "#06b6d4",
-            tension: 0.25
-          },
-          {
-            label: "draft-2020-12",
-            data: history.map(item => item.metrics.draft_adoption.draft_2020_12),
-            borderColor: "#2563eb",
-            tension: 0.25
-          }
-        ]);
-      }
-
-      main().catch(err => {
-        document.body.innerHTML = `<pre style="padding:24px;">${err.message}</pre>`;
-      });
-    </script>
-  </body>
+main().catch(console.error);
+</script>
+</body>
 </html>

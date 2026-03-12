@@ -9,9 +9,9 @@ import { fetchDraftAdoption } from "./metrics/draft_adoption.js";
 type Snapshot ={
     timestamp:string;
     metrics:{
-        ajv_weekly_dowloads:number;
+        ajv_weekly_downloads:number;
         json_schema_topic_repos:number;
-        bowtie_draft2020_12_compliance_count:number;
+        bowtie_draft2020_12_compliance_percent:number;
         draft_adoption:{
             draft_04:number;
             draft_06:number;
@@ -61,9 +61,9 @@ async function main(){
     const snapshot:Snapshot={
         timestamp,
         metrics:{
-            ajv_weekly_dowloads:npmDownloads.downloads,
+            ajv_weekly_downloads:npmDownloads.downloads,
             json_schema_topic_repos:githubRepos,
-            bowtie_draft2020_12_compliance_count:bowtieCompliance.compliancePercent,
+            bowtie_draft2020_12_compliance_percent:bowtieCompliance.compliancePercent,
             draft_adoption:draftAdoption,
         },
     };

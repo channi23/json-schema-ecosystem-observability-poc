@@ -33,9 +33,9 @@ async function main() {
     const snapshot = {
         timestamp,
         metrics: {
-            ajv_weekly_dowloads: npmDownloads.downloads,
+            ajv_weekly_downloads: npmDownloads.downloads,
             json_schema_topic_repos: githubRepos,
-            bowtie_draft2020_12_compliance_count: bowtieCompliance.compliancePercent,
+            bowtie_draft2020_12_compliance_percent: bowtieCompliance.compliancePercent,
             draft_adoption: draftAdoption,
         },
     };
