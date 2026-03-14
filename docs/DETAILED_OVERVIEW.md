@@ -39,16 +39,6 @@ It helps answer questions like:
 - Are more projects integrating schema validation?
 - Are developer tools adopting JSON Schema more frequently?
 
-### Limitations
-
-This metric is not a perfect measure of adoption because:
-
-- downloads include CI pipelines
-- downloads include transitive dependencies
-- some projects may bundle Ajv
-
-However, despite the noise, download trends often provide a **useful directional signal** about ecosystem adoption.
-
 ---
 
 # 2. Breadth — GitHub Repositories with `json-schema` Topic
@@ -66,13 +56,6 @@ It helps understand:
 - community participation
 
 This metric can also reveal how the ecosystem grows over time as more repositories adopt the topic.
-
-### Limitations
-
-- not all relevant repositories use the `json-schema` topic
-- some repositories may use the topic loosely
-
-Even with these limitations, it still provides a **reasonable signal for ecosystem breadth**.
 
 ---
 
@@ -149,21 +132,6 @@ For example:
 - repository count may grow even if implementations are inconsistent
 
 By combining metrics across **adoption, breadth, quality, and evolution**, the system provides a more complete view of the ecosystem.
-
----
-
-# Future Extensions
-
-This Proof of Concept focuses on a minimal but meaningful set of metrics.
-
-Possible future extensions include:
-
-- dependency graph analysis for ecosystem reach
-- contributor activity metrics
-- release frequency of implementations
-- ecosystem network visualization
-
-These additional signals could further improve ecosystem observability.
 
 ---
 
